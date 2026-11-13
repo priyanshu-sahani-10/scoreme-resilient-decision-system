@@ -1,0 +1,21 @@
+{
+  "name": "insurance_claim",
+  "version": 2,
+  "description": "Configurable insurance claim triage workflow with composite conditional rules",
+  "required_fields": {"claim_id": "string", "policy_active": "boolean", "claim_amount": "number", "incident_days_ago": "number", "documents_complete": "boolean"},
+  "stages": [
+    {"name": "policy_validation", "rules": [
+      {"id": "active_policy", "priority": 10, "field": "policy_active", "operator": "eq", "value": true, "on_fail": "REJECT", "reason": "The insurance policy is not active."},
+      {"id": "incident_reporting_window", "priority": 20, "field": "incident_days_ago", "operator": "lte", "value": 30, "on_fail": "MANUAL_REVIEW", "reason": "Incident is outside the standard 30-day reporting window."},
+      {"id": "standard_timeline_and_value", "priority": 25, "match": "all", "conditions": [
+        {"field": "incident_days_ago", "operator": "gte", "value": 3},
+        {"field": "claim_amount", "operator": "lte", "value": 150000}
+      ], "on_fail": "MANUAL_REVIEW", "reason": "Claims reported within 2 days or above INR 150,000 require expedited manual review."},
+      {"id": "documents_complete", "priority": 30, "field": "documents_complete", "operator": "eq", "value": true, "on_fail": "MANUAL_REVIEW", "reason": "Required supporting documents are incomplete."},
+      {"id": "claim_auto_limit", "priority": 40, "field": "claim_amount", "operator": "lte", "value": 200000, "on_fail": "MANUAL_REVIEW", "reason": "Claim exceeds the automatic processing limit."}
+    ]}
+  ],
+  "external_dependency": {"name": "document_verification", "required": true},
+  "retry_policy": {"max_attempts": 2, "base_delay_seconds": 0.02},
+  "decision": {"default": "APPROVED", "dependency_failure": "FAILED", "manual_review": "MANUAL_REVIEW", "rejection": "REJECTED"}
+}

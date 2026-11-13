@@ -1,0 +1,16 @@
+{
+  "name": "loan_approval",
+  "version": 1,
+  "description": "Configurable personal loan eligibility workflow",
+  "required_fields": {"applicant_id": "string", "monthly_income": "number", "credit_score": "number", "requested_amount": "number"},
+  "stages": [
+    {"name": "eligibility", "rules": [
+      {"id": "income_minimum", "priority": 10, "field": "monthly_income", "operator": "gte", "value": 30000, "on_fail": "REJECT", "reason": "Monthly income must be at least INR 30,000."},
+      {"id": "credit_score_minimum", "priority": 20, "field": "credit_score", "operator": "gte", "value": 650, "on_fail": "REJECT", "reason": "Credit score must be at least 650."},
+      {"id": "loan_amount_limit", "priority": 30, "field": "requested_amount", "operator": "lte", "value": 1000000, "on_fail": "MANUAL_REVIEW", "reason": "Requested amount exceeds the automatic approval limit."}
+    ]}
+  ],
+  "external_dependency": {"name": "credit_bureau", "required": true},
+  "retry_policy": {"max_attempts": 3, "base_delay_seconds": 0.02},
+  "decision": {"default": "APPROVED", "dependency_failure": "FAILED", "manual_review": "MANUAL_REVIEW", "rejection": "REJECTED"}
+}
